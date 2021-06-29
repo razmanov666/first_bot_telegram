@@ -1,23 +1,69 @@
+import re
 import telebot
+import json
 
 bot = telebot.TeleBot("1827098555:AAFay8gZy4c5pyxUc6I3HpkOgeheDl63Tww")
 
 
 @bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
+def main(message):
     bot.send_message(message.chat.id, text="Ура, я заработал")
-    markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(telebot.types.InlineKeyboardButton(text='Нет', callback_data='Нет'))
-    markup.add(telebot.types.InlineKeyboardButton(text='Да', callback_data='Да'))
-    markup.add(telebot.types.InlineKeyboardButton(text='300', callback_data='300'))
-    bot.send_message(message.chat.id, text="Хочешь задачку?", reply_markup=markup)
+    with open('users.json', 'r') as read_users:
+        read_data = json.load(read_users)
+        read_users.close()
 
-    # markup = telebot.types.InlineKeyboardMarkup()
-    # markup.add(telebot.types.InlineKeyboardButton(text='300', callback_data=300))
-    # markup.add(telebot.types.InlineKeyboardButton(text='400', callback_data=400))
-    # markup.add(telebot.types.InlineKeyboardButton(text='500', callback_data=500))
-    # bot.send_message(message.chat.id, text="Сколько будет 150+150?", reply_markup=markup)
-    # bot.send_message(517020426, text="Я еще подумаю", reply_markup=markup)
+    if len(read_data) >= 1:
+        result = json.dumps(read_data)
+        result = re.sub(r'}$', ',', result)
+        create_user(result, read_data, message)
+
+
+def task_for_user(message):
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton(text='200', callback_data='200'))
+    markup.add(telebot.types.InlineKeyboardButton(text='300', callback_data='300'))
+    markup.add(telebot.types.InlineKeyboardButton(text='400', callback_data='400'))
+    bot.send_message(message.chat.id, text="Сколько будет 150 + 150?", reply_markup=markup)
+
+
+def create_user(result, read_data, message):
+    # bot.send_message(message.chat.id, text="Ура, я заработал")
+    # print((result + '"user' + str(len(read_data) + 1) + '": [{"chat_id": "' + str(message.chat.id) + '",' +
+    #                        '"username": "' + message.from_user.username + '",' +
+    #                        '"first_name": "' + message.from_user.first_name + '",' +
+    #                        '"last_name": "' + message.from_user.last_name + '",' +
+    #                        '"status": "reg12142"}]}'))
+    parse = check_user_in_json(read_data, message)
+    user_data = get_user_data(result, read_data, message)
+    if parse:
+        print('parse: OK')
+        with open('users.json', 'w', encoding='utf-8') as users:
+            json.dump(user_data, users, ensure_ascii=False, indent=4)
+    else:
+        bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню')
+
+
+def check_user_in_json(read_data, message):
+    parse = True
+    user_list = range(1, len(read_data) + 1)
+    for i in user_list:
+        for user in read_data["user" + str(i)]:
+            for k, v in user.items():
+                if k == 'username' and v == message.from_user.username:
+                    print('parse: already exist' + '\nUsername: ' + message.from_user.username + ' K = ' + k)
+                    parse = False
+                    break
+    return parse
+
+
+def get_user_data(result, read_data, message):
+    user_data = json.loads(result + '"user' + str(len(read_data) + 1) + '": [{"chat_id": "' + str(message.chat.id)
+                           + '",' +
+                           '"username": "' + message.from_user.username + '",' +
+                           '"first_name": "' + message.from_user.first_name + '",' +
+                           '"last_name": "' + message.from_user.last_name + '",' +
+                           '"status": "reg12142"}]}')
+    return user_data
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -26,7 +72,7 @@ def query_handler(call):
     if call.data == '300':
         answer = 'Ну, ты сам знаешь кто твой любовник...'
     else:
-        answer = 'Плохо, пробуй еще!'
+        answer = 'Плохо, пробуй еще! @Drow_Ranger'
     bot.send_message(call.message.chat.id, answer)
 
 
