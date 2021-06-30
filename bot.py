@@ -16,6 +16,7 @@ def main(message):
         result = json.dumps(read_data)
         result = re.sub(r'}$', ',', result)
         create_user(result, read_data, message)
+    task_for_user(message)
 
 
 def task_for_user(message):
@@ -40,7 +41,7 @@ def create_user(result, read_data, message):
         with open('users.json', 'w', encoding='utf-8') as users:
             json.dump(user_data, users, ensure_ascii=False, indent=4)
     else:
-        bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню')
+        bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню!')
 
 
 def check_user_in_json(read_data, message):
@@ -49,21 +50,36 @@ def check_user_in_json(read_data, message):
     for i in user_list:
         for user in read_data["user" + str(i)]:
             for k, v in user.items():
-                if k == 'username' and v == message.from_user.username:
-                    print('parse: already exist' + '\nUsername: ' + message.from_user.username + ' K = ' + k)
+                if k == 'chat_id' and v == str(message.chat.id):
+                    if message.from_user.username:
+                        print('parse: already exist' + '\nUsername: ' + message.from_user.username)
+                    elif message.from_user.last_name:
+                        name = message.from_user.first_name + message.from_user.last_name
+                        print('parse: already exist' + '\nName: ' + name)
+                    else:
+                        print('parse: already exist' + '\nName: ' + message.from_user.first_name)
+                    print('K = ' + str(message.chat.id))
                     parse = False
                     break
     return parse
 
 
 def get_user_data(result, read_data, message):
-    user_data = json.loads(result + '"user' + str(len(read_data) + 1) + '": [{"chat_id": "' + str(message.chat.id)
-                           + '",' +
-                           '"username": "' + message.from_user.username + '",' +
-                           '"first_name": "' + message.from_user.first_name + '",' +
-                           '"last_name": "' + message.from_user.last_name + '",' +
-                           '"status": "reg12142"}]}')
-    return user_data
+    if message.from_user.last_name:
+        last_name = message.from_user.last_name
+    else:
+        last_name = ''
+    if message.from_user.username:
+        username = message.from_user.username
+    else:
+        username = ''
+    user_data = (result + '"user' + str(len(read_data) + 1) + '": [{"chat_id": "' + str(message.chat.id) + '",' +
+                 '"username": "' + username + '",' +
+                 '"first_name": "' + message.from_user.first_name + '",' +
+                 '"last_name": "' + last_name + '",' +
+                 '"status": "reg12142"}]}')
+
+    return json.loads(user_data)
 
 
 @bot.callback_query_handler(func=lambda call: True)
