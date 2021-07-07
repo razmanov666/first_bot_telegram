@@ -1,25 +1,41 @@
 import re
-import telebot 
+import telebot
 import json
 import pymongo
 
 db_client = pymongo.MongoClient("mongodb://localhost:27017/")
 current_db = db_client["razmanov_admin"]
+collection = current_db["users"]
+
 bot = telebot.TeleBot("1827098555:AAFay8gZy4c5pyxUc6I3HpkOgeheDl63Tww")
 
 
 @bot.message_handler(commands=['start', 'help'])
 def main(message):
     bot.send_message(message.chat.id, text="Ура, я заработал")
-    with open('users.json', 'r') as read_users:
-        read_data = json.load(read_users)
-        read_users.close()
+    userdb = create_userdb(message)
+    insert_result = collection.insert_one(userdb)
+    print(insert_result.inserted_id)
+    # with open('users.json', 'r') as read_users:
+    #     read_data = json.load(read_users)
+    #     read_users.close()
 
-    if len(read_data) >= 1:
-        result = json.dumps(read_data)
-        result = re.sub(r'}$', ',', result)
-        create_user(result, read_data, message)
+    # if len(read_data) >= 1:
+    #     result = json.dumps(read_data)
+    #     result = re.sub(r'}$', ',', result)
+    #     create_user(result, read_data, message)
     task_for_user(message)
+
+
+def create_userdb(message):
+    userdb = {
+        'chat_id': message.chat.id,
+        'username': 'asd',
+        'first_name': 'asdasd',
+        'last_name': 'asddaadsddas',
+        'status': 'reg'
+    }
+    return userdb
 
 
 def task_for_user(message):
