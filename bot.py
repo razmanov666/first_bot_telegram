@@ -1,11 +1,13 @@
-import telebot
+import telebot 
 import pymongo
+import config
+
 
 db_client = pymongo.MongoClient("mongodb://localhost:27017/")
 current_db = db_client["razmanov_admin"]
 collection = current_db["users"]
 
-bot = telebot.TeleBot("1827098555:AAFay8gZy4c5pyxUc6I3HpkOgeheDl63Tww")
+bot = telebot.TeleBot(config.token)
 
 
 @bot.message_handler(commands=['start', 'help'])
@@ -13,18 +15,23 @@ def main(message):
     bot.send_message(message.chat.id, text="Ура, я заработал")
     userdb = create_userdb(message)
     save_user_data(message, userdb)
-    show_usersdb(collection)
-    questions(message)
-
-
-def questions(message):
+    # show_usersdb(collection)
     task_for_user(message)
 
 
 def save_user_data(message, userdb):
+    print('collection = ')
+    print(collection.count_documents({}))
+
     if collection.count_documents({'chat_id': message.chat.id}) > 0:
-        bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню!')
-        update_userdb(message, userdb)
+        print(1)
+        if not message.from_user.username:
+            bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню!')
+            update_userdb(message, userdb)
+        elif message.from_user.username != 'first_telegram66345_bot':
+            print(2)
+            bot.send_message(message.chat.id, text='Привет, ' + message.from_user.first_name + ', я тебя помню!')
+            update_userdb(message, userdb)
     else:
         insert_result = collection.insert_one(userdb)
         print('New user: \n')
@@ -49,12 +56,13 @@ def create_userdb(message):
         first_name = 'None'
     else:
         first_name = message.from_user.first_name
+    # status = 
     userdb = {
         'chat_id': message.chat.id,
         'username': username,
         'first_name': first_name,
         'last_name': last_name,
-        'status': status
+        'status': 'status'
     }
     return userdb
 
@@ -103,7 +111,7 @@ def callback_worker_age(call):
     answer = 'Ладно, в следующий раз!'
     bot.send_message(call.message.chat.id, answer)
     save_user_data(call.message, create_userdb(call.message))
-    bot.stop_bot()
+    
 
 
 bot.polling()
